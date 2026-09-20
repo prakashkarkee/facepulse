@@ -18,7 +18,7 @@ The project is intended primarily as an experimental and educational exploration
 | 2 | 81.2 | Passed |
 | 3 | 76.0 | Passed |
 
-![FacePulse UI Analysis](facepulse_stat.png)
+![FacePulse UI Analysis](image/facepulse_stat.png)
 Left image statistic (Extracted Pulse): Displays the normalized pulse waveform restricted to the last 10 seconds of capture (-10 s to 0 s) with the standard subtitle "Relative amplitude · not an ECG".  
  Right image statistic (Frequency Spectrum): Displays the filled green frequency power distribution across 42–180 BPM, featuring the dashed vertical peak line and exact BPM annotation (76.0 BPM shown from Recording 3)
 
