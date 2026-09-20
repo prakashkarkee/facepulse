@@ -5,7 +5,7 @@ This project is a local, browser-based implementation for estimating a periodic 
 The pipeline takes a short face video, extracts a region of interest (ROI) from the skin, processes the resulting pixel-intensity signals, and applies signal-processing techniques to identify the dominant cardiac frequency. The detected frequency can then be converted into an estimated heart rate in beats per minute (BPM).
 
 The project is intended primarily as an experimental and educational exploration of rPPG, combining computer vision, signal processing, and physiological signal analysis. It runs locally in the browser, allowing the experiment to be performed without requiring a smartwatch, chest strap, or other body-worn sensor.
-![Testing with camera on](image/image.png.png)
+![Testing with camera on](image/image.png)
 
 
 ## Result : After 3 successive test, below is the result.
