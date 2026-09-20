@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="An experimental, private, in-browser lab for estimating heart rate from face video.">
+  <title>FacePulse — A pulse, hidden in pixels</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="./"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M2 17h7l4-10 6 19 4-9h7"/></svg>FacePulse<span>LAB</span></a><div class="private"><i></i> On-device processing</div><a href="#method" class="text-link">How it works <span>↗</span></a></header>
+  <main>
+    <section class="intro"><div><p class="eyebrow">COMPUTER VISION × SIGNAL PROCESSING</p><h1>A pulse, hidden in pixels.</h1><p class="lede">Explore the tiny colour changes that carry a heartbeat.<br>One camera. A little stillness. Thirty seconds.</p></div><div class="project-label"><span class="version">EXPERIMENT 001 / v1.0</span><span>Remote photoplethysmography</span><strong>rPPG / POS</strong></div></section>
+    <div class="workspace">
+      <section class="panel capture-panel" aria-labelledby="capture-title">
+        <div class="panel-heading"><h2 id="capture-title"><span class="step">01</span> Video source</h2><span class="badge" id="source-badge">READY WHEN YOU ARE</span></div>
+        <div class="stage" id="stage">
+          <video id="video" muted playsinline preload="metadata" hidden></video>
+          <div class="empty-state" id="empty-state"><svg class="face-art" viewBox="0 0 240 250" fill="none" aria-hidden="true"><path class="scan-corner" d="M35 65V35h30m110 0h30v30M35 185v30h30m110 0h30v-30"/><ellipse cx="120" cy="119" rx="57" ry="76"/><path d="M68 102c10-3 22-3 31 0m42 0c9-3 21-3 31 0M118 113l-8 30h16m-28 21c15 8 29 8 44 0M90 187l-8 27m69-27 8 27"/><rect class="forehead-art" x="94" y="65" width="52" height="21" rx="4"/><path class="scanline" d="M30 126h180"/><circle cx="120" cy="75" r="3"/></svg><h3>Meet your camera’s hidden sense.</h3><p>Open a camera or choose a face video to begin.</p><button id="demo" class="demo-link">Try synthetic demo <span>↗</span></button></div>
+          <div id="roi" class="roi" hidden><span>SKIN REGION</span><i></i><i></i><i></i><i></i></div>
+          <div id="demo-overlay" class="demo-overlay" hidden><span class="demo-chip">SYNTHETIC RGB SIGNAL</span><svg viewBox="0 0 640 260" aria-hidden="true"><defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="#45695d"/></pattern></defs><rect width="640" height="260" fill="url(#dots)"/><path d="M0 130H85l18-15 20 24 25-10 20-43 22 89 25-56 18 11h85l18-15 20 24 25-10 20-43 22 89 25-56 18 11h110"/></svg><strong>72 BPM input. Real signal processing.</strong><p>This generated signal tests the pipeline.<br>It is not a recording of a person.</p><button id="demo-again" class="demo-link">Run demo again ↗</button></div>
+          <div class="stage-bottom"><span id="stage-label">LOCAL VIDEO · NO UPLOADS</span><span id="dimensions">CAMERA OFF</span></div>
+        </div>
+        <div class="source-actions"><button id="camera" class="button primary"><span>◎</span> Open camera</button><button id="choose-video" class="button secondary"><span>↑</span> Choose video</button><input type="file" id="file" accept="video/*" hidden><button id="close-source" class="button ghost" disabled>Close</button></div>
+        <div class="region-tools"><div><h3><span class="step">02</span> Select a skin region</h3><p id="roi-help">Drag a rectangle over the forehead or a cheek. Avoid hair, eyes and glare.</p></div><button id="confirm-roi" class="button small" disabled>Use selected area</button></div>
+        <details class="fine-controls"><summary>Adjust region with sliders</summary><div class="sliders"><label>Left <input id="roi-x" type="range" min="0" max="95" value="40" disabled></label><label>Top <input id="roi-y" type="range" min="0" max="95" value="24" disabled></label><label>Width <input id="roi-w" type="range" min="5" max="95" value="20" disabled></label><label>Height <input id="roi-h" type="range" min="5" max="95" value="12" disabled></label></div></details>
+        <div class="capture-footer"><span class="lock-icon">◇</span><p>Frames stay in your browser. Only signal data is exported when you ask.</p></div>
+      </section>
+      <section class="panel result-panel" aria-labelledby="results-title">
+        <div class="panel-heading"><h2 id="results-title"><span class="step">03</span> Signal overview</h2><span class="live-dot" id="live-dot"></span></div>
+        <div class="estimate"><p class="eyebrow" id="estimate-label">ESTIMATED HEART RATE</p><div class="bpm"><span id="bpm">—</span><span class="bpm-unit">BPM</span><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 28S3 20 3 10a7 7 0 0 1 13-3 7 7 0 0 1 13 3c0 10-13 18-13 18Z"/></svg></div><div class="quality" id="quality">Awaiting a recording</div><p id="status" role="status" aria-live="polite">Choose a source and a skin region to get started.</p></div>
+        <div class="progress-label"><span id="progress-label">CAPTURE WINDOW</span><span><b id="elapsed">0</b> / 30 s</span></div><progress id="progress" max="30" value="0" aria-label="Capture progress"></progress>
+        <div class="metrics"><div><span>Frame rate</span><strong id="fps">— <small>fps</small></strong></div><div><span>Peak concentration</span><strong id="concentration">— <small>%</small></strong></div><div><span>Window agreement</span><strong id="stability">— <small>BPM</small></strong></div></div>
+        <button id="measure" class="button primary measure" disabled>Start 30-second capture <span>→</span></button><button id="stop" class="button secondary measure" hidden>Stop capture</button>
+        <div class="capture-tips"><span>01 <b>Face soft, steady light</b></span><span>02 <b>Keep your head still</b></span><span>03 <b>Keep this tab visible</b></span></div>
+        <div class="export-row"><span id="sample-count">No samples yet</span><button id="export" disabled>Export CSV ↓</button><button id="export-json" disabled>JSON ↓</button></div>
+      </section>
+    </div>
+    <section class="charts"><div class="panel chart-panel"><div class="panel-heading"><h2>Extracted pulse</h2><span class="chart-meta">NORMALIZED · LAST 10 SECONDS</span></div><canvas id="wave-chart" role="img" aria-label="Normalized extracted pulse waveform"></canvas><div class="chart-axis"><span>−10 s</span><span>Relative amplitude · not an ECG</span><span>0 s</span></div></div><div class="panel chart-panel"><div class="panel-heading"><h2>Frequency spectrum</h2><span class="chart-meta">42–180 BPM</span></div><canvas id="spectrum-chart" role="img" aria-label="Pulse frequency spectrum"></canvas><div class="chart-axis"><span>42</span><span>Dominant frequency × 60 = BPM</span><span>180</span></div></div></section>
+    <section class="method" id="method"><div class="method-intro"><p class="eyebrow">FROM LIGHT TO A SIGNAL</p><h2>What happens<br>between the frames.</h2><p>A transparent signal-processing baseline. No trained model or cloud service required.</p></div><div class="method-steps"><article><span>01 / SAMPLE</span><h3>Find a patch of skin</h3><p>Average the red, green and blue pixels in your selected region for each new video frame.</p></article><article><span>02 / SEPARATE</span><h3>Bring out the variation</h3><p>Normalize colour channels and apply the POS projection in overlapping 1.6-second windows.</p></article><article><span>03 / ESTIMATE</span><h3>Look for a stable rhythm</h3><p>Use a windowed FFT to find a peak, then check timing, exposure and consistency before showing BPM.</p></article></div></section>
+    <aside class="research-note"><span>RESEARCH PROTOTYPE</span><p>Not clinically validated. Motion, lighting, compression and skin reflectance can affect results. Signal checks are heuristics, not an accuracy score. Do not use this for diagnosis or health decisions. The region is selected manually; this version does not track faces.</p></aside>
+  </main>
+  <footer><span>FacePulse · Made for curiosity.</span><a href="https://doi.org/10.1109/TBME.2016.2609282" target="_blank" rel="noreferrer">Based on Wang et al. · POS, 2017 ↗</a><a href="README.md">Project guide ↗</a></footer>
+  <script type="module" src="app.mjs"></script>
+</body>
+</html>

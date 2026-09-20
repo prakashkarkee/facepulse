@@ -1,0 +1,69 @@
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+
+# Personal FacePulse session exports
+facepulse-*-session*.json
+facepulse-*-rgb*.csv
+
+# Local recordings and experiment data
+recordings/
+captures/
+exports/
+private-data/
+data/raw/
+
+# Video recordings
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+*.m4v
+
+# Keep the project's synthetic example
+!examples/synthetic-72bpm.webm
+
+# Build output and test coverage
+dist/
+build/
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# Temporary files and caches
+.cache/
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# Editor settings
+.vscode/
+.idea/
+*.code-workspace
+
+# Operating system files
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
