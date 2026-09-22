@@ -37,9 +37,9 @@ Open **http://127.0.0.1:8765**. Keep the server terminal running; press Ctrl+C t
 ## Try it
 
 1. Click **Try synthetic demo** to explore the graphs immediately. The generated input is 72 BPM. This is explicitly simulated data, not a measurement or validation on a person.
-2. Click **Open camera**, then allow camera access in Chrome; or **Choose video** and select a local MP4/WebM face recording of at least 20 seconds (30+ recommended). Unsupported codecs are reported. No audio is requested.
+2. Click **Open camera**, then allow camera access in Chrome; or **Choose video** and select a local MP4/WebM face recording of at least 3 seconds (20-30 seconds recommended). Unsupported codecs are reported. No audio is requested.
 3. Drag a rectangle over a clean forehead or cheek patch and click **Use selected area**. Clicking positions a default rectangle; sliders offer keyboard adjustment. Video is shown without mirroring. Avoid hair, eyes, mouth, shadows and specular highlights.
-4. Click **Start 30-second capture**. Remain still in soft, steady light. Leave this tab visible. Estimates begin after 20 seconds and refresh about once a second. Uploaded clips play at their normal speed from the beginning. Shorter accepted clips finish at the end of the video.
+4. Click **Start 30-second capture**. Remain still in soft, steady light. Leave this tab visible. A provisional estimate appears after 3 seconds and refreshes about once a second; continue to 20 seconds for the reliable estimate. Uploaded clips play at their normal speed from the beginning. Shorter accepted clips finish at the end of the video.
 5. Inspect the pulse and spectrum. **Export CSV** saves timestamped mean RGB and clipping fractions. **JSON** includes the result, rejection reasons, ROI, samples, normalized waveform, frequency spectrum and source type.
 6. Click **Close** to turn off the camera and clear the in-memory session. Reloading also clears the session. Export files remain wherever you saved them.
 
@@ -55,9 +55,9 @@ The ROI is **manual and fixed**, with no face detection or motion tracking. Keep
 - POS uses overlapping 1.6-second windows: normalize R/G/B by their window means, form `S1 = G − B` and `S2 = G + B − 2R`, combine `S1 + std(S1)/std(S2) × S2`, remove the window mean, and average overlapping contributions.
 - Linear detrending and a Hann window precede a radix-2 FFT. Search is restricted to **0.7–3.0 Hz (42–180 BPM)**. A log-power quadratic interpolation refines the largest peak. Fourfold zero padding improves interpolation, not physical frequency resolution; nominal resolution is about `60 / duration_seconds` BPM.
 - The displayed pulse uses an FFT band limitation to the same range and standard-deviation normalization. It is not an ECG. Filter boundaries may produce edge artefacts, and absolute waveform amplitude has no physiological calibration.
-- A result requires 20 seconds, adequate exposure, sufficient peak concentration, no excessive abrupt RGB jumps, and agreement between the first and last 60% of the recording.
+- A final result requires 20 seconds, adequate exposure, sufficient peak concentration, no excessive abrupt RGB jumps, and agreement between the first and last 60% of the recording. A provisional result can appear after 3 seconds, but its frequency resolution is only about 20 BPM and it has not had time to prove stability.
 
-Quality thresholds are **unvalidated engineering heuristics**: concentration ≥45% of in-band power within ±0.12 Hz of the peak; peak/median in-band power ≥8; split-window difference ≤10 BPM and concentration ≥35% in each split; ≤3% of frame-to-frame colour steps above 3.5%; mean luminance ≥15/255; ≤5% clipped pixels. POS standard deviation must exceed 1e-6. Peaks within 0.04 Hz of either search boundary are withheld.
+Quality thresholds are **unvalidated engineering heuristics**: concentration ≥25% of in-band power within ±0.12 Hz of the peak; peak/median in-band power ≥5; split-window difference ≤10 BPM and concentration ≥25% in each split; ≤3% of frame-to-frame colour steps above 3.5%; mean luminance ≥15/255; ≤5% clipped pixels. POS standard deviation must exceed 1e-6. Peaks within 0.04 Hz of either search boundary are withheld.
 
 “Peak concentration” is a spectral measure, **not an accuracy percentage**. “Window agreement” is the absolute BPM difference between the two overlapping subwindows; lower is more consistent. Periodic head motion or flickering light can pass these checks and create a wrong result. If a check fails, the headline BPM is withheld, while JSON retains a clearly named diagnostic `candidateBpm`.
 
@@ -77,7 +77,7 @@ The deterministic tests verify synthetic frequency recovery, nonuniform timestam
 
 For browser video plumbing, open `/validation.html`. Its fixture generator creates a synthetic RGB WebM clip locally. This separate page is a development aid; the generated video is not a real face recording. Upload its downloaded clip into the main app to exercise file decoding, frame sampling and analysis together.
 
-A ready-made 32-second fixture is included at `examples/synthetic-72bpm.webm`. It uses a flat colour patch with an exaggerated synthetic 72 BPM modulation to survive video compression. It tests video handling, not face detection or physiological accuracy. This fixture was recorded with a real-time browser recorder; testing found timing gaps that caused conservative rejection. Use the built-in RGB demo for deterministic 72 BPM recovery, and this video to inspect decoding and rejection behaviour.
+A ready-made 32-second fixture is included at `examples/synthetic-72bpm.webm`. It uses a flat colour patch with an exaggerated synthetic 72 BPM modulation to survive video compression. `examples/tested_data.mp4` is also served locally for decoding tests. These files test video handling, not face detection or physiological accuracy. Use the built-in RGB demo for deterministic 72 BPM recovery; real recordings may be rejected when motion, clipped pixels or unstable frequency make a BPM unreliable.
 
 See `VALIDATION.md` for checks completed in this delivery.
 

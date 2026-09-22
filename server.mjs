@@ -4,8 +4,8 @@ import { readFile } from 'node:fs/promises';
 import { dirname, join, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 const root = dirname(fileURLToPath(import.meta.url));
-const files = new Set(['index.html', 'styles.css', 'app.mjs', 'signal.mjs', 'icon.svg', 'README.md', 'validation.html', 'validation.mjs']);
-const types = { '.html': 'text/html', '.css': 'text/css', '.mjs': 'text/javascript', '.svg': 'image/svg+xml', '.md': 'text/plain' };
+const files = new Set(['index.html', 'styles.css', 'app.mjs', 'signal.mjs', 'icon.svg', 'README.md', 'validation.html', 'validation.mjs', 'examples/synthetic-72bpm.webm', 'examples/tested_data.mp4']);
+const types = { '.html': 'text/html', '.css': 'text/css', '.mjs': 'text/javascript', '.svg': 'image/svg+xml', '.md': 'text/plain', '.mp4': 'video/mp4', '.webm': 'video/webm' };
 const port = Number(process.env.PORT || 8765);
 const server = http.createServer(async (req, res) => {
   const file = new URL(req.url, 'http://localhost').pathname.slice(1) || 'index.html';

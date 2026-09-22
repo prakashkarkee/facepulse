@@ -14,6 +14,17 @@ test('recovers nonuniformly timestamped samples after interpolation', () => {
   assert.ok(Math.abs(analyze(s).bpm - 83) < 1);
 });
 test('rejects insufficient duration', () => assert.equal(analyze(syntheticSamples({ seconds: 10 })).valid, false));
+test('returns a provisional estimate after three seconds', () => {
+  const result = analyze(syntheticSamples({ seconds: 3, bpm: 72 }));
+  assert.equal(result.valid, false);
+  assert.equal(result.provisional, true);
+  assert.ok(Math.abs(result.bpm - 72) < 2);
+});
+test('does not return a provisional BPM for short noise', () => {
+  const result = analyze(syntheticSamples({ seconds: 3, pulse: false, noise: 2 }));
+  assert.equal(result.provisional, false);
+  assert.equal(result.bpm, null);
+});
 test('rejects constant video', () => {
   const result = analyze(syntheticSamples().map(s => ({ ...s, r: 140, g: 100, b: 80 })));
   assert.equal(result.valid, false); assert.equal(result.bpm, null);

@@ -94,7 +94,7 @@ $('file').addEventListener('change', async event => {
   try {
     state.source = 'video'; state.url = URL.createObjectURL(file); video.src = state.url; video.load();
     await waitForMedia();
-    if (Number.isFinite(video.duration) && video.duration < CONFIG.minSeconds) throw new Error('Choose a video at least 20 seconds long; 30 seconds is recommended.');
+    if (Number.isFinite(video.duration) && video.duration < CONFIG.minEstimateSeconds) throw new Error('Choose a video at least 3 seconds long. A 20-30 second recording gives a more reliable result.');
     mediaReady();
     if (!Number.isFinite(video.duration)) status('Video duration is not indexed. Select skin; capture will validate that at least 20 seconds were collected.');
   } catch (e) { releaseSource(); status(e.message); }
@@ -189,8 +189,9 @@ function onFrame(now, metadata) {
     $('sample-count').textContent = `${state.samples.length} RGB samples`;
     if (elapsed - state.lastAnalysis >= 1) {
       state.lastAnalysis = elapsed;
-      if (elapsed >= 4) { state.result = analyze(state.samples); renderResult(false); }
-      if (elapsed < CONFIG.minSeconds) status(`Collecting the signal… ${Math.max(0, Math.ceil(20 - elapsed))} s until the first estimate.`);
+      if (elapsed >= CONFIG.minEstimateSeconds) { state.result = analyze(state.samples); renderResult(false); }
+      if (elapsed < CONFIG.minEstimateSeconds) status(`Collecting the signal… ${Math.max(0, Math.ceil(CONFIG.minEstimateSeconds - elapsed))} s until the first estimate.`);
+      else if (elapsed < CONFIG.minSeconds) status('Provisional estimate shown. Keep recording for a more reliable 20-second result.');
     }
     if (elapsed >= CONFIG.maxSeconds) { finish(); return; }
   }
@@ -201,7 +202,7 @@ async function startCapture() {
   if (document.hidden) { status('Select this browser tab before starting capture so video frames are not throttled.'); return; }
   clearResults(); state.recording = true;
   $('quality').textContent = 'Collecting signal'; $('source-badge').textContent = 'CAPTURING';
-  status('Keep still. Collecting at least 20 seconds before estimating.'); syncControls();
+  status('Keep still. A provisional estimate appears after 3 seconds; continue to 20 seconds for the reliable result.'); syncControls();
   try {
     if (state.source === 'video' && video.currentTime > 0.001) {
       await new Promise((resolve, reject) => {
@@ -231,15 +232,16 @@ window.addEventListener('pagehide', () => state.stream?.getTracks().forEach(t =>
 
 function renderResult(final) {
   const r = state.result; if (!r) return;
-  $('bpm').textContent = r.valid ? Math.round(r.bpm) : '—';
+  $('bpm').textContent = r.bpm !== null && r.bpm !== undefined ? Math.round(r.bpm) : '—';
   $('fps').innerHTML = `${r.fps?.toFixed(1) ?? '—'} <small>fps</small>`;
   $('concentration').innerHTML = `${r.concentration !== undefined ? Math.round(r.concentration * 100) : '—'} <small>%</small>`;
   $('stability').innerHTML = `${r.stability !== null && r.stability !== undefined ? r.stability.toFixed(1) : '—'} <small>BPM</small>`;
   const demo = state.source === 'demo';
-  $('quality').textContent = demo ? 'Synthetic demo · not a measurement' : r.valid ? 'Signal checks passed' : r.duration < 19.95 && !final ? 'Collecting signal' : 'No reliable estimate';
-  $('quality').className = `quality ${r.valid ? 'good' : final ? 'warn' : ''}`;
+  $('quality').textContent = demo ? 'Synthetic demo · not a measurement' : r.valid ? 'Signal checks passed' : r.provisional ? 'Provisional estimate' : r.duration < CONFIG.minEstimateSeconds && !final ? 'Collecting signal' : 'No reliable estimate';
+  $('quality').className = `quality ${r.valid ? 'good' : r.provisional ? 'warn' : final ? 'warn' : ''}`;
   if (demo) status('Generated input: 72 BPM. The estimate above comes from processing simulated RGB values.');
   else if (r.valid) status(final ? 'Capture complete. This is an experimental estimate; compare it with a simultaneous reference.' : 'A periodic signal is emerging. Continue holding still for the full capture.');
+  else if (r.provisional) status('Provisional estimate. Continue recording to check whether the frequency stays stable.');
   else status(r.reasons.join(' '));
   drawCharts();
 }

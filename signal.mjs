@@ -1,6 +1,6 @@
 // POS projection: Wang et al., DOI 10.1109/TBME.2016.2609282.
 // The quality gates below are engineering heuristics, not clinical validation.
-export const CONFIG = Object.freeze({ minSeconds: 20, maxSeconds: 30, minFps: 12, lowHz: 0.7, highHz: 3.0 });
+export const CONFIG = Object.freeze({ minSeconds: 20, minEstimateSeconds: 3, maxSeconds: 30, minFps: 12, lowHz: 0.7, highHz: 3.0, minConcentration: 0.25, minPeakRatio: 5, minSplitConcentration: 0.25, maxStabilityBpm: 10 });
 const mean = a => a.reduce((s, v) => s + v, 0) / a.length;
 const std = a => { const m = mean(a); return Math.sqrt(mean(a.map(v => (v - m) ** 2))); };
 const median = a => { const b = [...a].sort((x, y) => x - y); return b.length % 2 ? b[b.length >> 1] : (b[b.length / 2 - 1] + b[b.length / 2]) / 2; };
@@ -122,15 +122,17 @@ export function displayBandpass(signal, fs) {
 }
 
 export function analyze(samples) {
-  if (samples.length < 3) return { valid: false, reasons: ['Collect at least 20 seconds of video.'], duration: 0 };
+  if (samples.length < 3) return { valid: false, provisional: false, reasons: ['Collect at least 3 seconds of video.'], duration: 0 };
   let input;
   try { input = resample(samples); } catch (e) { return { valid: false, reasons: [e.message], duration: 0 }; }
   const { rgb, times, fs, duration, maxGap, effectiveFps } = input;
   const reasons = [];
-  if (duration < CONFIG.minSeconds - 0.05) reasons.push('Collect at least 20 seconds of video.');
+  const estimateReady = duration >= CONFIG.minEstimateSeconds - 0.05;
+  const finalReady = duration >= CONFIG.minSeconds - 0.05;
+  if (!estimateReady) reasons.push('Collect at least 3 seconds of video.');
   if (fs < CONFIG.minFps || effectiveFps < CONFIG.minFps) reasons.push('Frame rate is too low; use at least 12 frames per second.');
   if (maxGap > 0.25) reasons.push('Video has a frame gap longer than 250 ms.');
-  if (duration < 4 || rgb.length < 48 || fs < CONFIG.minFps || effectiveFps < CONFIG.minFps) return { valid: false, bpm: null, reasons, duration, fps: effectiveFps };
+  if (duration < CONFIG.minEstimateSeconds || rgb.length < Math.ceil(CONFIG.minEstimateSeconds * CONFIG.minFps) || fs < CONFIG.minFps || effectiveFps < CONFIG.minFps) return { valid: false, bpm: null, provisional: false, reasons, duration, fps: effectiveFps };
   const pulse = pos(rgb, fs), spec = spectrum(pulse, fs);
   const amplitude = std(pulse);
   const brightness = mean(rgb.map(v => 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]));
@@ -139,17 +141,20 @@ export function analyze(samples) {
   const jumps = steps.filter(v => v > 0.035).length / steps.length;
   if (brightness < 15 || clipped > 0.05) reasons.push('Exposure is too dark or clipped; adjust the lighting.');
   if (jumps > 0.03) reasons.push('Abrupt colour changes suggest motion or unstable lighting.');
-  if (amplitude < 1e-6 || spec.concentration < 0.45 || spec.peakRatio < 8) reasons.push('No sufficiently concentrated periodic signal.');
+  if (amplitude < 1e-6 || spec.concentration < CONFIG.minConcentration || spec.peakRatio < CONFIG.minPeakRatio) reasons.push('No sufficiently concentrated periodic signal.');
   if (spec.edge) reasons.push('Peak is too close to the 42–180 BPM search boundary.');
   let stability = null;
-  if (duration >= 3) {
+  if (finalReady) {
     const length = Math.floor(rgb.length * 0.6);
     const first = spectrum(pos(rgb.slice(0, length), fs), fs);
     const last = spectrum(pos(rgb.slice(-length), fs), fs);
     stability = Math.abs(first.bpm - last.bpm);
-    if (stability > 10 || Math.min(first.concentration, last.concentration) < 0.35) reasons.push('Pulse frequency is inconsistent across the recording.');
+    if (stability > CONFIG.maxStabilityBpm || Math.min(first.concentration, last.concentration) < CONFIG.minSplitConcentration) reasons.push('Pulse frequency is inconsistent across the recording.');
   }
-  return { valid: !reasons.length, bpm: reasons.length ? null : spec.bpm, candidateBpm: spec.bpm,
+  const signalPasses = !reasons.some(reason => reason !== 'Collect at least 20 seconds of video.');
+  const provisional = !finalReady && signalPasses;
+  if (!finalReady && !reasons.includes('Collect at least 20 seconds of video.')) reasons.push('Collect at least 20 seconds of video.');
+  return { valid: finalReady && !reasons.length, provisional, bpm: signalPasses ? spec.bpm : null, candidateBpm: spec.bpm,
     reasons, duration, fps: effectiveFps, fs, maxGap, brightness, clipped, motionJumpFraction: jumps,
     concentration: spec.concentration, peakRatio: spec.peakRatio, stability,
     times, waveform: displayBandpass(pulse, fs), spectrum: spec.bins,
