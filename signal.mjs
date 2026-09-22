@@ -142,7 +142,7 @@ export function analyze(samples) {
   if (amplitude < 1e-6 || spec.concentration < 0.45 || spec.peakRatio < 8) reasons.push('No sufficiently concentrated periodic signal.');
   if (spec.edge) reasons.push('Peak is too close to the 42–180 BPM search boundary.');
   let stability = null;
-  if (duration >= 19.95) {
+  if (duration >= 3) {
     const length = Math.floor(rgb.length * 0.6);
     const first = spectrum(pos(rgb.slice(0, length), fs), fs);
     const last = spectrum(pos(rgb.slice(-length), fs), fs);
